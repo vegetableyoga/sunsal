@@ -4,10 +4,24 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Pause, RotateCcw, Trash2, Zap, Clock } from 'lucide-react';
 
 // --- Web Audio API Helper ---
-const playSound = (type: 'tick' | 'setEnd' | 'finish' | 'fanfare' | 'bell' | 'startSignal') => {
+// 関数の外側で、使い回すための変数を宣言しておく
+let audioCtx: AudioContext | null = null;
+
+const playSound = async (type: 'tick' | 'setEnd' | 'finish' | 'fanfare' | 'bell' | 'startSignal') => {
   const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioContext) return;
-  const ctx = new AudioContext();
+
+  // まだシステムがなければ作る、あればそれを使う
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+  }
+  const ctx = audioCtx;
+
+  // ★ Android/iPhoneの「勝手にスリープ」を防ぐ一撃
+  if (ctx.state === 'suspended') {
+    await ctx.resume();
+  }
+
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
